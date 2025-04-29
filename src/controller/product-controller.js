@@ -29,9 +29,13 @@ export const addProduct = [
         weight: weightInGrams, // Simpan dalam gram
         price: parseFloat(req.body.price),
         stock: parseInt(req.body.stock, 10),
-        expiryDate: req.body.category === 'Aksesoris' ? null : req.body.expiryDate
       };
 
+       // Jika kategori Aksesoris, hapus expiryDate dari body
+       if (req.body.category === 'Aksesoris') {
+        delete cleanBody.expiryDate;
+      }
+      
       console.log('Processed body:', cleanBody);
 
       const result = await productService.addProduct(

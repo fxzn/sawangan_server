@@ -13,7 +13,6 @@ const addProduct = async (adminId, request, imageFile) => {
     weight: weightInKg, // Simpan dalam kg
     category: request.category.charAt(0).toUpperCase() + 
              request.category.slice(1).toLowerCase(),
-    expiryDate: request.category === 'Aksesoris' ? null : request.expiryDate
   });
 
   // Validasi weight
