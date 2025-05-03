@@ -6,6 +6,10 @@ import { addItemToCart, clearCart, getCart, removeItemFromCart, updateCartItem }
 import { searchDestinations } from '../controller/checkout-controller.js';
 import { getShippingOptions } from '../controller/checkout-controller.js';
 import { checkout } from '../controller/checkout-controller.js';
+import { handleMidtransNotification } from '../controller/midtrans-controller.js';
+import { getOrderDetails, getOrderTracking, getUserOrders } from '../controller/order-controller.js';
+import { completeOrder, createReview, getProductReviews } from '../controller/review-controller.js';
+import { addToWishlist, checkProductInWishlist, getWishlist, removeFromWishlist } from '../controller/wishlist-controller.js';
 
 
 const router = Router();
@@ -20,7 +24,6 @@ router.get('/api/v1/profile', getProfile);
 router.patch('/api/v1/profile', updateProfile);
 router.post('/api/v1/profile/avatar', upload.single('avatar'), uploadAvatar);
 router.patch('/api/v1/profile/changepassword', changePassword);
-
 
 
 
@@ -40,6 +43,34 @@ router.post('/api/v1/checkout', checkout);
 router.get('/api/v1/shipping/options', getShippingOptions);
 router.get('/api/v1/shipping/destinations', searchDestinations);
 
+// midtrans
+router.post('/api/v1/payment/notification', handleMidtransNotification);
 
+
+// Order route
+router.get('/api/v1/orders', getUserOrders);  
+router.get('/api/v1/orders/:orderId', getOrderDetails);
+router.get('/api/v1/orders/:orderId/tracking', getOrderTracking);
+
+
+
+// Review route
+router.patch('/api/v1/orders/complete/:orderId', completeOrder);
+router.post('/api/v1/orders/reviews/:orderId', createReview);
+router.get('/api/v1/products/reviews/:productId', getProductReviews);
+
+
+// Whislist route
+// router.post('/api/v1/wishlists', addToWishlist);
+// router.get('/api/v1/wishlists', getUserWishlist);
+// router.delete('/api/v1/wishlists/:productId', removeFromWishlist);
+// router.get('/api/v1/wishlists/check', checkProductInWishlist);
+// router.delete('/api/v1/wishlists/clear', clearUserWishlist);
+
+
+router.post('/api/v1/wishlist', addToWishlist);
+router.delete('/api/v1/wishlist/:productId', removeFromWishlist);
+router.get('/api/v1/wishlists', getWishlist);
+router.get('/api/v1/wishlist/check/:productId', checkProductInWishlist);
 
 export default router

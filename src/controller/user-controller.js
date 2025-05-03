@@ -164,29 +164,6 @@ export const uploadAvatar = async (req, res, next) => {
 };
 
 
-// export const uploadAvatar = async (req, res, next) => {
-//   try {
-//     if (!req.file) {
-//       throw new ResponseError(400, 'Avatar file is required');
-//     }
-
-//     const result = await userService.updateAvatar(req.user.id, req.file);
-    
-//     res.status(200).json({
-//       success: true,
-//       data: {
-//         avatarUrl: result.avatar
-//       }
-//     });
-//   } catch (error) {
-//     // Cleanup jika error terjadi
-//     if (req.file?.path && fs.existsSync(req.file.path)) {
-//       fs.unlinkSync(req.file.path);
-//     }
-//     next(error);
-//   }
-// };
-
 
 export const changePassword = async (req, res, next) => {
   try {
