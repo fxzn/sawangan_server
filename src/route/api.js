@@ -2,7 +2,6 @@ import { Router } from 'express';
 import { authMiddleware } from '../middleware/auth-middleware.js';
 import { changePassword, getProfile, logout, updateProfile, uploadAvatar } from '../controller/user-controller.js';
 import upload from '../utils/avatar.js';
-import { getAllProducts, getProductById } from '../controller/product-controller.js';
 import { addItemToCart, clearCart, getCart, removeItemFromCart, updateCartItem } from '../controller/cart-controller.js';
 import { searchDestinations } from '../controller/checkout-controller.js';
 import { getShippingOptions } from '../controller/checkout-controller.js';
@@ -22,9 +21,7 @@ router.patch('/api/v1/profile', updateProfile);
 router.post('/api/v1/profile/avatar', upload.single('avatar'), uploadAvatar);
 router.patch('/api/v1/profile/changepassword', changePassword);
 
-// product router
-router.get('/api/v1/products', getAllProducts);
-router.get('/api/v1/products/:id', getProductById);
+
 
 
 // keranjang router
