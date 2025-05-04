@@ -1,7 +1,8 @@
 import { Router } from 'express';
 import { authMiddleware } from '../middleware/auth-middleware.js';
-import { changePassword, getProfile, logout, updateProfile, uploadAvatar } from '../controller/user-controller.js';
+import { logout } from '../controller/user-controller.js';
 import upload from '../utils/avatar.js';
+import { getAllProducts, getProductById } from '../controller/product-controller.js';
 import { addItemToCart, clearCart, getCart, removeItemFromCart, updateCartItem } from '../controller/cart-controller.js';
 import { searchDestinations } from '../controller/checkout-controller.js';
 import { getShippingOptions } from '../controller/checkout-controller.js';
@@ -10,6 +11,7 @@ import { handleMidtransNotification } from '../controller/midtrans-controller.js
 import { getOrderDetails, getOrderTracking, getUserOrders } from '../controller/order-controller.js';
 import { completeOrder, createReview, getProductReviews } from '../controller/review-controller.js';
 import { addToWishlist, checkProductInWishlist, getWishlist, removeFromWishlist } from '../controller/wishlist-controller.js';
+import { changePassword, getProfile, updateProfile, uploadAvatar } from '../controller/profile-controller.js';
 
 
 const router = Router();
@@ -24,7 +26,6 @@ router.get('/api/v1/profile', getProfile);
 router.patch('/api/v1/profile', updateProfile);
 router.post('/api/v1/profile/avatar', upload.single('avatar'), uploadAvatar);
 router.patch('/api/v1/profile/changepassword', changePassword);
-
 
 
 // keranjang router

@@ -3,7 +3,7 @@ import { v4 as uuid } from 'uuid';
 import { prismaClient } from '../application/database.js';
 import jwt from 'jsonwebtoken';
 import { validate } from '../validation/validation.js';
-import { loginValidation, registerValidation, updateProfileValidation, userUuidValidation,  } from '../validation/user-validation.js';
+import { loginValidation, registerValidation, userUuidValidation,  } from '../validation/user-validation.js';
 import { ResponseError } from '../error/response-error.js';
 import { sendResetPasswordEmail } from '../utils/email-sender.js';
 import { compareTokens, generateResetToken, hashToken } from '../utils/token-utils.js';
@@ -52,46 +52,6 @@ const register = async (request) => {
     });
 
 };
-
-// const register = async (request) => {
-//   // Validasi request untuk registrasi
-//   const user = validate(registerValidation, request);
-  
-//   // Cek email sudah terdaftar atau belum 
-//   const existingUser = await prismaClient.user.findUnique({
-//     where: { email: user.email }
-//   });
-
-//   if (existingUser) {
-//     throw new ResponseError(404, "Email already exists");
-//   }
-
-
-//   // Hash password pada database
-//   user.password = await bcrypt.hash(user.password, 10);
-  
-//   // untuk buat user baru
-//   return prismaClient.user.create({
-//       data: {
-//           id: uuid(),
-//           fullName: user.fullName,
-//           email: user.email,
-//           phone: user.phone,
-//           password: user.password,
-//           provider: 'LOCAL',
-//           isVerified: false
-//       },
-//       select: {
-//           id: true,
-//           fullName: true,
-//           email: true,
-//           phone: true,
-//           role: true,
-//           avatar: true,
-//           createdAt: true
-//       }
-//   });
-// };
 
 
 const login = async (request) => {
@@ -381,6 +341,8 @@ const googleAuth = async (googleToken) => {
 
 
 
+
+
 // const googleAuth = async (googleToken) => {
 //   try {
 //     // 1. Verifikasi token Google
@@ -480,94 +442,6 @@ const getAllUsersForAdmin = async () => {
   });
 };
 
-
-
-const getUserProfile = async (userId) => {
-  userId = validate(userUuidValidation, userId);
-  
-  const user = await prismaClient.user.findUnique({
-    where: { id: userId },
-    select: {
-      id: true,
-      fullName: true,
-      email: true,
-      phone: true,
-      avatar: true,
-      role: true,
-      provider: true
-    }
-  });
-
-  if (!user) throw new ResponseError(404, "User not found");
-  return user;
-};
-
-
-const updateProfile = async (userId, request) => {
-  const validated = validate(updateProfileValidation, request); // Validasi: fullName, phone
-  
-  return await prismaClient.user.update({
-    where: { id: userId },
-    data: {
-      fullName: validated.fullName,
-      phone: validated.phone
-    },
-    select: { id: true, fullName: true, phone: true, email: true }
-  });
-};
-
-
-
-const updateAvatar = async (userId, avatarFile) => {
-  userId = validate(userUuidValidation, userId);
-
-  // 1. Hapus avatar lama dari Cloudinary jika ada
-  const oldUser = await prismaClient.user.findUnique({
-    where: { id: userId },
-
-    select: { avatar: true }
-  });
-
-  if (oldUser?.avatar) {
-    const publicId = oldUser.avatar.split('/').pop().split('.')[0];
-    await cloudinary.uploader.destroy(`user_avatars/${publicId}`);
-  }
-
-  // 2. Gunakan URL dari Cloudinary yang sudah di-upload oleh middleware
-  return await prismaClient.user.update({
-    where: { id: userId },
-    data: { avatar: avatarFile.path }, // path berisi secure_url dari Cloudinary
-    select: {
-      id: true,
-      avatar: true
-    }
-  });
-};
-
-
-
-const changePassword = async (userId, currentPassword, newPassword, confirmPassword) => {
-  // Validasi
-  if (newPassword !== confirmPassword) {
-    throw new ResponseError(400, "New password and confirmation mismatch");
-  }
-
-  const user = await prismaClient.user.findUnique({
-    where: { id: userId },
-    select: { password: true }
-  });
-
-  // Verifikasi password lama
-  const isMatch = await bcrypt.compare(currentPassword, user.password);
-  if (!isMatch) throw new ResponseError(401, "Current password is wrong");
-
-  // Update password baru
-  const hashedPassword = await bcrypt.hash(newPassword, 10);
-  await prismaClient.user.update({
-    where: { id: userId },
-    data: { password: hashedPassword }
-  });
-};
 
 
 const deleteUser = async (userId) => {
@@ -700,9 +574,5 @@ export default {
   resetPassword,
   googleAuth,
   getAllUsersForAdmin,
-  getUserProfile,
-  updateProfile,
-  updateAvatar,
-  changePassword,
   deleteUser
 }
