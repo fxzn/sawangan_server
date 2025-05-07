@@ -113,96 +113,216 @@ const createMidtransTransaction = async (order, user) => {
   }
 };
 
-const processCheckout = async (userId, checkoutData) => {
-  return await prismaClient.$transaction(async (prisma) => {
-    const cart = await prisma.cart.findUnique({
-      where: { userId },
-      include: { items: { include: { product: true } } }
-    });
+// const processCheckout = async (userId, checkoutData) => {
+//   return await prismaClient.$transaction(async (prisma) => {
+//     const cart = await prisma.cart.findUnique({
+//       where: { userId },
+//       include: { items: { include: { product: true } } }
+//     });
 
-    if (!cart?.items?.length) throw new ResponseError(400, 'Cart is empty');
+//     if (!cart?.items?.length) throw new ResponseError(400, 'Cart is empty');
 
-    const user = await prisma.user.findUnique({
-      where: { id: userId },
-      select: { fullName: true, email: true, phone: true }
-    });
+//     const user = await prisma.user.findUnique({
+//       where: { id: userId },
+//       select: { fullName: true, email: true, phone: true }
+//     });
 
-    const { subTotal, totalWeight, itemsWithPrice } = calculateCartTotals(cart.items);
-    validateStockAvailability(cart.items);
+//     const { subTotal, totalWeight, itemsWithPrice } = calculateCartTotals(cart.items);
+//     validateStockAvailability(cart.items);
 
-    const shippingOptions = await komerceService.calculateShippingCost({
-      shipper_destination_id: process.env.WAREHOUSE_LOCATION_ID,
-      receiver_destination_id: checkoutData.destinationId,
-      weight: totalWeight,
-      item_value: subTotal
-    });
+//     const shippingOptions = await komerceService.calculateShippingCost({
+//       shipper_destination_id: process.env.WAREHOUSE_LOCATION_ID,
+//       receiver_destination_id: checkoutData.destinationId,
+//       weight: totalWeight,
+//       item_value: subTotal
+//     });
 
-    const selectedService = shippingOptions.find(service => 
-      service.shipping_name.toLowerCase() === checkoutData.courier.toLowerCase() && 
-      service.service_name.toLowerCase() === checkoutData.shippingService.toLowerCase()
-    );
+//     const selectedService = shippingOptions.find(service => 
+//       service.shipping_name.toLowerCase() === checkoutData.courier.toLowerCase() && 
+//       service.service_name.toLowerCase() === checkoutData.shippingService.toLowerCase()
+//     );
 
-    if (!selectedService) {
-      throw new ResponseError(400, 'Selected shipping service not available');
-    }
+//     if (!selectedService) {
+//       throw new ResponseError(400, 'Selected shipping service not available');
+//     }
 
-    // Update product stocks
-    await Promise.all(
-      cart.items.map(item => 
-        prisma.product.update({
-          where: { id: item.productId },
-          data: { stock: { decrement: item.quantity } }
-        })
-      )
-    );
+//     // Update product stocks
+//     await Promise.all(
+//       cart.items.map(item => 
+//         prisma.product.update({
+//           where: { id: item.productId },
+//           data: { stock: { decrement: item.quantity } }
+//         })
+//       )
+//     );
 
-    const order = await prisma.order.create({
-      data: {
-        userId,
-        items: {
-          create: itemsWithPrice.map(item => ({
-            productId: item.productId,
-            quantity: item.quantity,
-            price: item.price,
-            productName: item.product.name,
-            weight: item.weight
-          }))
-        },
-        status: 'PENDING',
-        paymentStatus: 'PENDING',
-        totalAmount: subTotal + selectedService.price,
-        customerName: user.fullName,
-        customerEmail: user.email,
-        customerPhone: user.phone,
-        shippingAddress: checkoutData.shippingAddress,
-        shippingCity: checkoutData.shippingCity,
-        shippingProvince: checkoutData.shippingProvince,
-        shippingPostCode: checkoutData.shippingPostCode,
-        shippingCost: selectedService.price,
-        shipping_name: selectedService.shipping_name,
-        service_name: selectedService.service_name,
-        estimatedDelivery: selectedService.etd || '1-3 days'
-      },
-      include: { items: { include: { product: true } } }
-    });
+//     const order = await prisma.order.create({
+//       data: {
+//         userId,
+//         items: {
+//           create: itemsWithPrice.map(item => ({
+//             productId: item.productId,
+//             quantity: item.quantity,
+//             price: item.price,
+//             productName: item.product.name,
+//             weight: item.weight
+//           }))
+//         },
+//         status: 'PENDING',
+//         paymentStatus: 'PENDING',
+//         totalAmount: subTotal + selectedService.price,
+//         customerName: user.fullName,
+//         customerEmail: user.email,
+//         customerPhone: user.phone,
+//         shippingAddress: checkoutData.shippingAddress,
+//         shippingCity: checkoutData.shippingCity,
+//         shippingProvince: checkoutData.shippingProvince,
+//         shippingPostCode: checkoutData.shippingPostCode,
+//         shippingCost: selectedService.price,
+//         shipping_name: selectedService.shipping_name,
+//         service_name: selectedService.service_name,
+//         estimatedDelivery: selectedService.etd || '1-3 days'
+//       },
+//       include: { items: { include: { product: true } } }
+//     });
 
-    await prisma.cartItem.deleteMany({ where: { cartId: cart.id } });
+//     await prisma.cartItem.deleteMany({ where: { cartId: cart.id } });
 
-    const paymentData = await createMidtransTransaction(order, user);
+//     const paymentData = await createMidtransTransaction(order, user);
 
-    return await prisma.order.update({
-      where: { id: order.id },
-      data: {
-        paymentToken: paymentData.token,
-        paymentUrl: paymentData.paymentUrl,
-        midtransOrderId: paymentData.midtransOrderId
-      },
-      include: { items: { include: { product: true } } }}
-    )
-  });
-};
+//     return await prisma.order.update({
+//       where: { id: order.id },
+//       data: {
+//         paymentToken: paymentData.token,
+//         paymentUrl: paymentData.paymentUrl,
+//         midtransOrderId: paymentData.midtransOrderId
+//       },
+//       include: { items: { include: { product: true } } }}
+//     )
+//   });
+// };
 
 // Add this new function to handle payment notifications
+
+
+const processCheckout = async (userId, checkoutData) => {
+  // Tambahkan logging untuk memantau waktu transaksi
+  console.time('CheckoutTransaction');
+  
+  try {
+    return await prismaClient.$transaction(async (prisma) => {
+      const cart = await prisma.cart.findUnique({
+        where: { userId },
+        include: { items: { include: { product: true } } }
+      });
+
+      if (!cart?.items?.length) throw new ResponseError(400, 'Cart is empty');
+
+      const user = await prisma.user.findUnique({
+        where: { id: userId },
+        select: { fullName: true, email: true, phone: true }
+      });
+
+      const { subTotal, totalWeight, itemsWithPrice } = calculateCartTotals(cart.items);
+      validateStockAvailability(cart.items);
+
+      const shippingOptions = await komerceService.calculateShippingCost({
+        shipper_destination_id: process.env.WAREHOUSE_LOCATION_ID,
+        receiver_destination_id: checkoutData.destinationId,
+        weight: totalWeight,
+        item_value: subTotal
+      });
+
+      const selectedService = shippingOptions.find(service => 
+        service.shipping_name.toLowerCase() === checkoutData.courier.toLowerCase() && 
+        service.service_name.toLowerCase() === checkoutData.shippingService.toLowerCase()
+      );
+
+      if (!selectedService) {
+        throw new ResponseError(400, 'Selected shipping service not available');
+      }
+
+      // Update product stocks
+      await Promise.all(
+        cart.items.map(item => 
+          prisma.product.update({
+            where: { id: item.productId },
+            data: { stock: { decrement: item.quantity } }
+          })
+        )
+      );
+
+      const order = await prisma.order.create({
+        data: {
+          userId,
+          items: {
+            create: itemsWithPrice.map(item => ({
+              productId: item.productId,
+              quantity: item.quantity,
+              price: item.price,
+              productName: item.product.name,
+              weight: item.weight
+            }))
+          },
+          status: 'PENDING',
+          paymentStatus: 'PENDING',
+          totalAmount: subTotal + selectedService.price,
+          customerName: user.fullName,
+          customerEmail: user.email,
+          customerPhone: user.phone,
+          shippingAddress: checkoutData.shippingAddress,
+          shippingCity: checkoutData.shippingCity,
+          shippingProvince: checkoutData.shippingProvince,
+          shippingPostCode: checkoutData.shippingPostCode,
+          shippingCost: selectedService.price,
+          shipping_name: selectedService.shipping_name,
+          service_name: selectedService.service_name,
+          estimatedDelivery: selectedService.etd || '1-3 days'
+        },
+        include: { items: { include: { product: true } } }
+      );
+
+      await prisma.cartItem.deleteMany({ where: { cartId: cart.id } });
+
+      const paymentData = await createMidtransTransaction(order, user);
+
+      return await prisma.order.update({
+        where: { id: order.id },
+        data: {
+          paymentToken: paymentData.token,
+          paymentUrl: paymentData.paymentUrl,
+          midtransOrderId: paymentData.midtransOrderId
+        },
+        include: { items: { include: { product: true } } }}
+      );
+    }, {
+      // TAMBAHKAN INI: Timeout 30 detik untuk production
+      timeout: 30000,
+      maxWait: 60000
+    });
+  } catch (error) {
+    console.timeEnd('CheckoutTransaction'); // Catat waktu transaksi saat error
+    
+    // Handle khusus transaction timeout
+    if (error.message.includes('Transaction already closed') || 
+        error.message.includes('expired transaction')) {
+      console.error('Transaction timeout exceeded:', {
+        userId,
+        error: error.message
+      });
+      throw new ResponseError(500, 'Checkout process took too long. Please try again');
+    }
+    
+    throw error; // Re-throw error lainnya
+  } finally {
+    console.timeEnd('CheckoutTransaction'); // Pastikan timer selalu dihentikan
+  }
+};
+
+
+
+
+
 const handlePaymentNotification = async (notification) => {
   try {
     // First validate the notification structure
