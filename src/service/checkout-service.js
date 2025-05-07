@@ -202,6 +202,9 @@ const processCheckout = async (userId, checkoutData) => {
   });
 };
 
+
+
+
 // Add this new function to handle payment notifications
 const handlePaymentNotification = async (notification) => {
   try {
