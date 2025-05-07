@@ -280,7 +280,7 @@ const processCheckout = async (userId, checkoutData) => {
           estimatedDelivery: selectedService.etd || '1-3 days'
         },
         include: { items: { include: { product: true } } }
-      );
+    });
 
       await prisma.cartItem.deleteMany({ where: { cartId: cart.id } });
 
